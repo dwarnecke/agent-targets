@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-targets"
+version = "0.1.0"
+description = "Local pipeline for agent-led company research, DCF valuation and saved research reports."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Dylan Warnecke", email = "dylan.warnecke@gmail.com" }]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+research = "agent_targets.cli:run_research"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

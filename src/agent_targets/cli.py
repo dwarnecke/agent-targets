@@ -14,7 +14,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 # Invalid usage exits 2 through argparse
 EXIT_CODES = {RunStatus.COMPLETED: 0, RunStatus.FAILED: 3}
 
-DEFAULT_MODEL = "gpt-6-astra"
+DEFAULT_MODEL = "gpt-5.6-sol"
+DEFAULT_EFFORT = "xhigh"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -28,6 +29,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--model",
         default=DEFAULT_MODEL,
         help="Codex model identifier used for every stage (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--effort",
+        default=DEFAULT_EFFORT,
+        help=(
+            "Reasoning effort level used for every stage; the available levels "
+            "depend on the model (default: %(default)s)"
+        ),
     )
     return parser
 
@@ -50,7 +59,7 @@ def run_research(argv: list[str] | None = None) -> int:
 
     result = run_pipeline(
         ticker=args.ticker,
-        adapter=CodexAdapter(Path(executable), args.model),
+        adapter=CodexAdapter(Path(executable), args.model, args.effort),
         prompts_directory=PROJECT_ROOT / "prompts",
         runs_directory=PROJECT_ROOT / "runs",
     )

@@ -9,12 +9,20 @@ from agent_targets import cli
 from agent_targets.runner import RunResult, RunStatus
 
 
-def test_the_model_defaults_to_gpt_6_astra() -> None:
+def test_the_model_defaults_to_gpt_5_6_sol() -> None:
     """Omitting --model selects the default model, and --model overrides it."""
     parser = cli.build_parser()
 
-    assert parser.parse_args(["WMT"]).model == "gpt-6-astra"
+    assert parser.parse_args(["WMT"]).model == "gpt-5.6-sol"
     assert parser.parse_args(["WMT", "--model", "test-model"]).model == "test-model"
+
+
+def test_the_effort_defaults_to_xhigh() -> None:
+    """Omitting --effort selects extra high, and --effort overrides it."""
+    parser = cli.build_parser()
+
+    assert parser.parse_args(["WMT"]).effort == "xhigh"
+    assert parser.parse_args(["WMT", "--effort", "low"]).effort == "low"
 
 
 def test_missing_codex_executable_is_invalid_usage(

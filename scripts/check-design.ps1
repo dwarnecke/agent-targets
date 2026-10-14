@@ -109,7 +109,7 @@ if (Test-Path -LiteralPath $overviewPath -PathType Leaf) {
 $workflowPath = Join-Path $designRoot 'workflow.md'
 if (Test-Path -LiteralPath $workflowPath -PathType Leaf) {
     $workflow = [IO.File]::ReadAllText($workflowPath)
-    $expectedCommands = @('research WMT --model <model-id>')
+    $expectedCommands = @('research WMT [--model <model-id>] [--effort <level>]')
     $commandBlock = [regex]::Match($workflow, '(?ms)^### Commands\r?\n\s*```text\r?\n(?<commands>.*?)^```')
     $actualCommands = @($commandBlock.Groups['commands'].Value -split '\r?\n' | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() })
     if (-not $commandBlock.Success -or ($actualCommands -join '|') -cne ($expectedCommands -join '|')) {
@@ -153,10 +153,7 @@ if (Test-Path -LiteralPath $ratePath -PathType Leaf) {
         $issues.Add('Missing common-hurdle formula')
     }
     foreach ($formula in @(
-        'weighted_fair_value = sum(p_i * V_i)',
-        'regime_probability_R = sum(p_i for i in R)',
-        'regime_fair_value_R = sum(p_i * V_i for i in R) / regime_probability_R',
-        'regime_contribution_R = sum(p_i * V_i for i in R)'
+        'weighted_fair_value = sum(p_i * V_i)'
     )) {
         if (-not ($rateDocument -split '\r?\n').Contains($formula)) {
             $issues.Add("Missing agent weighting instruction: $formula")

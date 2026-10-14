@@ -7,7 +7,7 @@ from enum import Enum
 from pathlib import Path
 from secrets import token_hex
 
-from agent_targets.codex import CodexAdapter
+from agent_targets.codex import CodexAdapter, CodexResponse
 
 STAGE_ORDER = [
     "initiation",
@@ -17,8 +17,9 @@ STAGE_ORDER = [
     "comparison",
     "report",
 ]
+
 MAX_ATTEMPTS_PER_STAGE = 3
-CALL_TIMEOUT_SECONDS = 600
+CALL_TIMEOUT_SECONDS = 1800
 
 
 class RunStatus(Enum):
@@ -38,35 +39,36 @@ class RunResult:
 
 
 def build_context(
-    prompts_directory: Path, stage_id: str, ticker: str, accepted: dict[str, str]
+    prompts_directory: Path,
+    stage_id: str,
+    ticker: str,
+    resumed: bool = False,
+    records: dict[str, str] | None = None,
 ) -> str:
     """
     Build one stage's prompt text.
 
-    Combines the common policy and the stage template with the ticker and
-    every accepted predecessor response, inlined as labeled text.
+    The first stage starts the conversation, so it gets the common policy, its
+    template and the ticker. Every later stage resumes that conversation,
+    which already holds the policy, the ticker and all earlier work, so it
+    gets only its template. A stage given saved records also gets them in full,
+    because compaction can drop detail from the conversation.
 
     :param prompts_directory: Directory holding the policy and stage templates
     :param stage_id: Stage being built
     :param ticker: Company ticker being researched
-    :param accepted: Accepted stage responses so far, keyed by stage ID
+    :param resumed: Whether the stage continues the run's conversation
+    :param records: Saved responses of earlier stages, by stage ID
     :returns: Combined prompt text
     """
-    policy_path = prompts_directory / "common.md"
     template_path = prompts_directory / f"{stage_id}.md"
-
-    parts = [
-        policy_path.read_text(encoding="utf-8"),
-        template_path.read_text(encoding="utf-8"),
-        f"## Input\n\nTicker: {ticker}",
-    ]
-
-    # Only earlier stages are inlined, so a stage never sees later output
-    for stage in STAGE_ORDER[: STAGE_ORDER.index(stage_id)]:
-        if stage in accepted:
-            parts.append(
-                f'<accepted_stage name="{stage}">\n{accepted[stage]}\n</accepted_stage>'
-            )
+    parts = [template_path.read_text(encoding="utf-8")]
+    if not resumed:
+        policy_path = prompts_directory / "common.md"
+        parts.insert(0, policy_path.read_text(encoding="utf-8"))
+        parts.append(f"## Input\n\nTicker: {ticker}")
+    for record_stage, text in (records or {}).items():
+        parts.append(f"## Saved record: {record_stage}\n\n{text}")
     return "\n\n".join(parts) + "\n"
 
 
@@ -77,14 +79,15 @@ def run_pipeline(
     runs_directory: Path,
 ) -> RunResult:
     """
-    Run the six stages in order, saving each response to a new run directory.
+    Run the six stages in one conversation, saving each response.
 
     Stops only when a stage returns no response in its attempts. Each response
     is saved as `<stage>.md`; the report stage's response is the report.
 
     :param ticker: Company ticker to research
     :param adapter: Object whose `invoke(context_dir, prompt_text,
-        timeout_seconds)` returns the final message text or None
+        timeout_seconds, session_id)` returns a response with its text and
+        conversation ID, or None
     :param prompts_directory: Directory holding the policy and stage templates
     :param runs_directory: Directory the new run directory is created in
     :returns: The run's outcome and run directory
@@ -95,10 +98,17 @@ def run_pipeline(
     run_dir = runs_directory / f"{ticker.upper()}-{started_at}-{token_hex(2)}"
     run_dir.mkdir(parents=True)
 
-    accepted: dict[str, str] = {}
+    session_id: str | None = None
+    responses: dict[str, str] = {}
     for stage_id in STAGE_ORDER:
-        prompt_text = build_context(prompts_directory, stage_id, ticker, accepted)
-        response = _run_stage(adapter, run_dir, stage_id, prompt_text)
+        prompt_text = build_context(
+            prompts_directory,
+            stage_id,
+            ticker,
+            resumed=session_id is not None,
+            records=responses if stage_id == STAGE_ORDER[-1] else None,
+        )
+        response = _run_stage(adapter, run_dir, stage_id, prompt_text, session_id)
         if response is None:
             detail = (
                 f"Stage '{stage_id}' returned no response in "
@@ -106,28 +116,35 @@ def run_pipeline(
             )
             return RunResult(RunStatus.FAILED, run_dir, detail)
 
-        accepted[stage_id] = response
+        session_id = response.session_id
+        responses[stage_id] = response.text
 
         # Bytes preserve the response's whitespace and line endings exactly
-        (run_dir / f"{stage_id}.md").write_bytes(response.encode("utf-8"))
+        (run_dir / f"{stage_id}.md").write_bytes(response.text.encode("utf-8"))
 
     return RunResult(RunStatus.COMPLETED, run_dir, None)
 
 
 def _run_stage(
-    adapter: CodexAdapter, run_dir: Path, stage_id: str, prompt_text: str
-) -> str | None:
+    adapter: CodexAdapter,
+    run_dir: Path,
+    stage_id: str,
+    prompt_text: str,
+    session_id: str | None,
+) -> CodexResponse | None:
     """
     Invoke one stage until it returns a response or attempts run out.
 
     Each attempt gets its own directory holding the CLI's events,
     diagnostics and final message. A timeout or empty final message uses up
-    one attempt.
+    one attempt. A retry in a resumed conversation continues it, so it may
+    include what an interrupted attempt had already done.
 
     :param adapter: Adapter used to invoke the model
     :param run_dir: Run directory the attempt directories are created in
     :param stage_id: Stage being run
     :param prompt_text: Complete prompt sent on every attempt
+    :param session_id: Conversation to continue, or None to start a new one
     :returns: The first response, or None if every attempt failed
     """
     for attempt in range(1, MAX_ATTEMPTS_PER_STAGE + 1):
@@ -137,6 +154,7 @@ def _run_stage(
             context_dir=attempt_dir,
             prompt_text=prompt_text,
             timeout_seconds=CALL_TIMEOUT_SECONDS,
+            session_id=session_id,
         )
         if response is not None:
             return response

@@ -16,7 +16,7 @@ Use UTC-aware timestamps for run records while retaining source-specific dates a
 
 Construct subprocess argument lists with `shell=False`. Keep invocation details in the adapter. Never interpolate external values into shell commands or execute source/report code as application logic. Follow the [adapter contract](../design/execution.md#codex-adapter) for output capture and acceptance.
 
-Keep source research and financial calculations with the agents, following [Valuation](../design/valuation.md). The runner saves agent responses as written; it must not retrieve replacement research, judge or repair financial values, or reject a response for its content.
+Keep source research and financial calculations with the agents, following [Valuation](../design/valuation.md). The runner fetches only the initiation facts, the security, quote and two rates, with parsers that select by name and freshness checks that raise an error rather than repair a value. It saves agent responses as written; it must not retrieve replacement research, judge or repair financial values, or reject a response for its content.
 
 ## Failures and diagnostics
 

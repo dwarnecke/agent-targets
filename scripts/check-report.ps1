@@ -36,9 +36,13 @@ foreach ($file in $Path) {
         if ($summary | Where-Object { $_ -match '^\|\s*\**[A-Z]{1,2}\d+\**\s*\|' }) {
             $issues.Add('Valuation Summary names an outcome by its ID')
         }
+        if (-not ($summary | Where-Object { $_ -match '(?i)horizon' })) {
+            $issues.Add('Valuation Summary has no horizon for reaching the weighted fair value')
+        }
     }
 
     for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '^\|.*(?i:weighted contribution|p_i\s*V_i)') { $issues.Add("Line $($i + 1): table has a weighted-contribution column") }
         if ($lines[$i] -match '\\\(|\\\[') { $issues.Add("Line $($i + 1): \( or \[ math delimiter") }
         if ($lines[$i] -match $leaks) { $issues.Add("Line $($i + 1): process wording '$($Matches[0])'") }
         if ($lines[$i] -match '\\\$[1-9]\d*\.\d{4,}') { $issues.Add("Line $($i + 1): unrounded dollar value '$($Matches[0])'") }

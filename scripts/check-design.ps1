@@ -95,8 +95,8 @@ $overviewPath = Join-Path $designRoot 'README.md'
 if (Test-Path -LiteralPath $overviewPath -PathType Leaf) {
     $overview = [IO.File]::ReadAllText($overviewPath)
     $steps = @([regex]::Matches($overview, '(?m)^#### (?<step>\d+)\. ') | ForEach-Object { $_.Groups['step'].Value })
-    if (($steps -join ',') -ne '1,2,3,4,5,6') {
-        $issues.Add('Overview must explain six pipeline steps in order')
+    if (($steps -join ',') -ne '1,2,3,4,5,6,7') {
+        $issues.Add('Overview must explain seven pipeline steps in order')
     }
     $overviewBody = ($overview -split '(?m)^## References\r?$', 2)[0]
     foreach ($detail in @('workflow.md', 'valuation.md', 'execution.md')) {
@@ -115,7 +115,7 @@ if (Test-Path -LiteralPath $workflowPath -PathType Leaf) {
     if (-not $commandBlock.Success -or ($actualCommands -join '|') -cne ($expectedCommands -join '|')) {
         $issues.Add('Command examples must show the single research command with its model')
     }
-    $expectedStages = @('initiation', 'research', 'modeling', 'refutation', 'comparison', 'report')
+    $expectedStages = @('initiation', 'research', 'modeling', 'refutation', 'comparison', 'review', 'report')
     $actualStages = @([regex]::Matches($workflow, '(?m)^\| `(?<stage>[^`]+)` \|') | ForEach-Object {
         $_.Groups['stage'].Value
     })

@@ -15,6 +15,7 @@ from agent_targets.runner import (
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 REPORT = "# Report\r\n\r\nValue: 60  \r\n"
+INITIATION = "Initiation facts: WMT closed at 112.28"
 
 
 class FakeAdapter:
@@ -68,7 +69,9 @@ def _run(adapter: FakeAdapter, runs_directory: Path) -> RunResult:
     :param runs_directory: Directory the run directory is created in
     :returns: The run's result
     """
-    return run_pipeline("WMT", adapter, PROJECT_ROOT / "prompts", runs_directory)
+    return run_pipeline(
+        "WMT", INITIATION, adapter, PROJECT_ROOT / "prompts", runs_directory
+    )
 
 
 def test_full_run_saves_every_stage_and_exact_report_bytes(tmp_path: Path) -> None:
@@ -85,7 +88,13 @@ def test_full_run_saves_every_stage_and_exact_report_bytes(tmp_path: Path) -> No
     assert adapter.calls == STAGE_ORDER
     for stage_id in STAGE_ORDER:
         assert (result.run_dir / f"{stage_id}.md").is_file()
+    assert (result.run_dir / "initiation.md").read_text(encoding="utf-8") == INITIATION
     assert (result.run_dir / "report.md").read_bytes() == REPORT.encode("utf-8")
+
+
+def test_review_runs_after_comparison_and_before_the_report() -> None:
+    """The final review sees the comparison's edits and the report sees the review."""
+    assert STAGE_ORDER[-3:] == ["comparison", "review", "report"]
 
 
 def test_every_stage_continues_the_first_stages_conversation(
@@ -100,12 +109,14 @@ def test_every_stage_continues_the_first_stages_conversation(
 
     _run(adapter, tmp_path)
 
-    assert adapter.sessions["initiation"] is None
+    assert adapter.sessions["research"] is None
     for stage_id in STAGE_ORDER[1:]:
         assert adapter.sessions[stage_id] == "session-1"
 
 
-def test_only_the_first_stage_receives_the_policy_and_ticker(tmp_path: Path) -> None:
+def test_only_the_first_stage_receives_the_policy_ticker_and_initiation(
+    tmp_path: Path,
+) -> None:
     """
     Later stages get just their template, since the conversation holds the rest.
 
@@ -115,8 +126,10 @@ def test_only_the_first_stage_receives_the_policy_and_ticker(tmp_path: Path) -> 
 
     _run(adapter, tmp_path)
 
-    assert "Common Analytical Policy" in adapter.prompts["initiation"]
-    assert "Ticker: WMT" in adapter.prompts["initiation"]
+    first_prompt = adapter.prompts["research"]
+    assert "Common Analytical Policy" in first_prompt
+    assert "Ticker: WMT" in first_prompt
+    assert f"## Saved record: initiation\n\n{INITIATION}" in first_prompt
     for stage_id in STAGE_ORDER[1:]:
         prompt = adapter.prompts[stage_id]
         assert "Common Analytical Policy" not in prompt
@@ -126,7 +139,7 @@ def test_only_the_first_stage_receives_the_policy_and_ticker(tmp_path: Path) -> 
 
 def test_only_the_report_stage_receives_the_earlier_responses(tmp_path: Path) -> None:
     """
-    The report prompt carries every earlier response in full; no other stage does.
+    The report prompt carries the initiation record and every earlier response.
 
     :param tmp_path: Directory the run directory is created in
     """
@@ -134,10 +147,13 @@ def test_only_the_report_stage_receives_the_earlier_responses(tmp_path: Path) ->
 
     _run(adapter, tmp_path)
 
+    report_prompt = adapter.prompts["report"]
+    assert f"## Saved record: initiation\n\n{INITIATION}" in report_prompt
     for stage_id in STAGE_ORDER[:-1]:
-        assert f"## Saved record: {stage_id}\n\n{stage_id} text" in adapter.prompts["report"]
+        assert f"## Saved record: {stage_id}\n\n{stage_id} text" in report_prompt
+    for stage_id in STAGE_ORDER[1:-1]:
         assert "## Saved record:" not in adapter.prompts[stage_id]
-    assert "## Saved record: report" not in adapter.prompts["report"]
+    assert "## Saved record: report" not in report_prompt
 
 
 def test_failed_call_is_retried_and_the_run_completes(tmp_path: Path) -> None:
@@ -147,13 +163,13 @@ def test_failed_call_is_retried_and_the_run_completes(tmp_path: Path) -> None:
     :param tmp_path: Directory the run directory is created in
     """
     adapter = FakeAdapter()
-    adapter.scripted["research"].insert(0, None)
+    adapter.scripted["modeling"].insert(0, None)
 
     result = _run(adapter, tmp_path)
 
     assert result.status is RunStatus.COMPLETED
-    assert adapter.calls.count("research") == 2
-    assert adapter.sessions["research"] == "session-1"
+    assert adapter.calls.count("modeling") == 2
+    assert adapter.sessions["modeling"] == "session-1"
 
 
 def test_stage_without_a_response_fails_after_its_attempts(tmp_path: Path) -> None:
@@ -175,7 +191,7 @@ def test_stage_without_a_response_fails_after_its_attempts(tmp_path: Path) -> No
 
 def test_build_context_starts_a_conversation_with_policy_template_and_ticker() -> None:
     """A new conversation's prompt has the policy, the template and the ticker."""
-    prompt = build_context(PROJECT_ROOT / "prompts", "initiation", "WMT")
+    prompt = build_context(PROJECT_ROOT / "prompts", "research", "WMT")
 
     assert "Common Analytical Policy" in prompt
     assert "## Input\n\nTicker: WMT" in prompt

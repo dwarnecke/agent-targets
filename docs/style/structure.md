@@ -4,7 +4,7 @@ Make dependencies, orchestration and state ownership explicit. Follow the packag
 
 ## Modules and dependencies
 
-Group code by responsibility. Command handlers call the runner; the runner coordinates agent invocation, context preparation and storage. Research agents own source retrieval and verification. Lower-level modules do not import command handlers or reach into runner internals.
+Group code by responsibility. Command handlers call the initiation sources and the runner; the runner coordinates agent invocation, context preparation and storage. Research agents own source retrieval and verification beyond the initiation facts. Lower-level modules do not import command handlers or reach into runner internals.
 
 Keep related operations together until a distinct responsibility warrants another module. Put helpers beside the domain they serve, such as final-message reading with the agent adapter. Avoid an unrelated collection of helpers in `utils.py`.
 

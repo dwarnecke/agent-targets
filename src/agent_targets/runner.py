@@ -10,11 +10,11 @@ from secrets import token_hex
 from agent_targets.codex import CodexAdapter, CodexResponse
 
 STAGE_ORDER = [
-    "initiation",
     "research",
     "modeling",
     "refutation",
     "comparison",
+    "review",
     "report",
 ]
 
@@ -51,8 +51,9 @@ def build_context(
     The first stage starts the conversation, so it gets the common policy, its
     template and the ticker. Every later stage resumes that conversation,
     which already holds the policy, the ticker and all earlier work, so it
-    gets only its template. A stage given saved records also gets them in full,
-    because compaction can drop detail from the conversation.
+    gets only its template. A stage given saved records also gets them in full:
+    the first stage gets the initiation record, and the last gets every earlier
+    record, because compaction can drop detail from the conversation.
 
     :param prompts_directory: Directory holding the policy and stage templates
     :param stage_id: Stage being built
@@ -74,6 +75,7 @@ def build_context(
 
 def run_pipeline(
     ticker: str,
+    initiation_record: str,
     adapter: CodexAdapter,
     prompts_directory: Path,
     runs_directory: Path,
@@ -81,10 +83,13 @@ def run_pipeline(
     """
     Run the six stages in one conversation, saving each response.
 
-    Stops only when a stage returns no response in its attempts. Each response
-    is saved as `<stage>.md`; the report stage's response is the report.
+    Stops only when a stage returns no response in its attempts. The
+    initiation record is saved as `initiation.md` and given to the first and
+    last stages. Each response is saved as `<stage>.md`; the report stage's
+    response is the report.
 
     :param ticker: Company ticker to research
+    :param initiation_record: Sourced security, quote and rate facts
     :param adapter: Object whose `invoke(context_dir, prompt_text,
         timeout_seconds, session_id)` returns a response with its text and
         conversation ID, or None
@@ -97,16 +102,18 @@ def run_pipeline(
     # The random suffix keeps runs started in the same second from colliding
     run_dir = runs_directory / f"{ticker.upper()}-{started_at}-{token_hex(2)}"
     run_dir.mkdir(parents=True)
+    (run_dir / "initiation.md").write_bytes(initiation_record.encode("utf-8"))
 
     session_id: str | None = None
-    responses: dict[str, str] = {}
+    responses: dict[str, str] = {"initiation": initiation_record}
     for stage_id in STAGE_ORDER:
+        gets_records = stage_id in (STAGE_ORDER[0], STAGE_ORDER[-1])
         prompt_text = build_context(
             prompts_directory,
             stage_id,
             ticker,
             resumed=session_id is not None,
-            records=responses if stage_id == STAGE_ORDER[-1] else None,
+            records=responses if gets_records else None,
         )
         response = _run_stage(adapter, run_dir, stage_id, prompt_text, session_id)
         if response is None:

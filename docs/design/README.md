@@ -36,7 +36,7 @@ Code, not an agent, reads the SEC ticker list for the legal name, CIK and listin
 
 #### 2. Research: investigate the business and its outcomes together
 
-The agent reconciles the historical baseline, classifies competitive advantages into structural buckets or rejects them with a reason, explores candidate outcomes, investigates each with supporting and contrary evidence, and sets the final outcomes and probabilities, together with the common hurdle. The quote never shapes them. See [competitive advantage classification](valuation.md#competitive-advantage-classification), [outcome weighting](valuation.md#outcome-weighting) and the [discount rate](valuation.md#discount-rate).
+The agent reconciles the historical baseline, classifies competitive advantages into structural buckets or rejects them with a reason, explores candidate outcomes, collects the topics outside analysts, call transcripts, news and company announcements treat as decisive and settles each in primary sources, investigates each candidate with supporting and contrary evidence, and sets the final outcomes and probabilities, together with the common hurdle. The quote, outside price targets and estimates never shape them. See [competitive advantage classification](valuation.md#competitive-advantage-classification), [outcome weighting](valuation.md#outcome-weighting) and the [discount rate](valuation.md#discount-rate).
 
 #### 3. Modeling: research the forecast inputs and build the DCF
 
@@ -48,7 +48,7 @@ The agent reviews its own earlier work as claims to test: it verifies claims aga
 
 #### 5. Comparison: investigate outside disagreements and correct for them
 
-The agent aligns outside research with the corrected model and the run's bases and adopts, rejects or leaves each discrepancy unresolved, without averaging outside targets into the DCF. It also tests every major outcome, catalyst or risk that outside analysts identify against the outcomes and partition, flagging any that are missing or under-argued. It applies an adopted discrepancy to the model only when primary evidence supports it.
+The agent aligns outside research with the corrected model and the run's bases and adopts, rejects or leaves each discrepancy unresolved, without averaging outside targets into the DCF. It also tests every major outcome, catalyst or risk that outside analysts identify against the outcomes and partition, starting from the topics research recorded and flagging any that are missing or under-argued. It applies an adopted discrepancy to the model only when primary evidence supports it.
 
 #### 6. Review: recheck the corrections
 

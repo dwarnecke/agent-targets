@@ -95,6 +95,44 @@ def test_report_only_review_is_absent() -> None:
     assert not findings, "\n" + "\n".join(findings)
 
 
+def test_research_prompt_investigates_outside_topics_without_their_conclusions() -> None:
+    """Fail when research stops collecting outside topics or lets outside targets and estimates become inputs."""
+    research = (PROJECT_ROOT / "prompts" / "research.md").read_text(encoding="utf-8")
+    policy = (PROJECT_ROOT / "prompts" / "common.md").read_text(encoding="utf-8")
+    assert "Outside topics" in research
+    assert "Ratings, price targets and estimates are never inputs" in research
+    assert "never choose outcomes, probabilities or assumptions" in policy
+
+
+def test_research_prompt_treats_management_statements_as_topics() -> None:
+    """Fail when research stops recording management's own forward statements."""
+    research = (PROJECT_ROOT / "prompts" / "research.md").read_text(encoding="utf-8")
+    assert "management's own forward statements" in research
+    assert "medium-term and multi-year targets" in research
+
+
+def test_later_stages_cite_the_outside_topic_table_research_produces() -> None:
+    """Fail when a stage cites the outside-topic table and research does not define it, or the reverse."""
+    for stage in ("research", "modeling", "comparison"):
+        text = (PROJECT_ROOT / "prompts" / f"{stage}.md").read_text(encoding="utf-8")
+        assert "outside-topic table" in text, stage
+
+
+def test_modeling_prompt_checks_period_one_against_run_rate_and_targets() -> None:
+    """Fail when modeling stops comparing period 1 with the run rate and management targets in both directions."""
+    modeling = (PROJECT_ROOT / "prompts" / "modeling.md").read_text(encoding="utf-8")
+    assert "period-1 table" in modeling
+    assert "run rate" in modeling
+    assert "in either direction" in modeling
+
+
+def test_comparison_prompt_bridges_outside_fair_values_as_a_diagnostic() -> None:
+    """Fail when comparison stops bridging outside valuations or lets the bridge change the model."""
+    comparison = (PROJECT_ROOT / "prompts" / "comparison.md").read_text(encoding="utf-8")
+    assert "one convention at a time" in comparison
+    assert "never applied to the model" in comparison
+
+
 def test_review_prompt_exists_for_the_final_stage() -> None:
     """Fail when the final review stage has no template or stops limiting itself to small fixes."""
     text = (PROJECT_ROOT / "prompts" / "review.md").read_text(encoding="utf-8")

@@ -8,3 +8,6 @@ dist/
 
 # Runs contain source snapshots, model output and provenance; never commit them.
 runs/
+
+# Local review notes; kept on disk, not tracked.
+docs/reviews/

@@ -7,8 +7,8 @@ You are the research agent investigating the company and its possible business o
 Work through these phases in this one call, revisiting earlier phases when evidence changes the picture.
 
 1. Business baseline: reconcile historical financials, identify the few operating drivers, classify each claimed competitive advantage under the competitive advantages policy (keeping the rejected items and their reasons), and propose the owner-cash-flow bridge.
-2. Candidate outcomes: find materially different causal mechanisms and observable outcomes, including plausible alternatives to the leading thesis. Do not start from a fixed number of scenarios or ranked levels.
-3. Targeted investigation: for each candidate, research its specific questions, seeking supporting and contrary evidence. Revise, add, merge or drop candidates as the evidence warrants, and record why. Difficulty valuing a downside path is never a reason to drop it.
+2. Candidate outcomes: find materially different causal mechanisms and observable outcomes, including plausible alternatives to the leading thesis. Look beyond primary sources for them, as the evidence policy describes. Do not start from a fixed number of scenarios or ranked levels.
+3. Targeted investigation: for each candidate, research its specific questions, seeking supporting and contrary evidence, and confirming each material finding in a primary source. Revise, add, merge or drop candidates as the evidence warrants, and record why. Difficulty valuing a downside path is never a reason to drop it.
 4. Final outcomes: define the retained complete outcomes, then assign unconditional probabilities from the evidence.
 
 ## Requirements

@@ -27,7 +27,7 @@ Scanned files that need OCR are unsupported. An inaccessible optional source is 
 
 ### Evidence
 
-Every source is cited by publisher, title, URL or filing, precise locator, retrieval time, publication date when known, and period. Numbers are labeled as sourced facts, derived amounts or judgments. Probabilities are judgments unless an empirical calibration is actually established. A missing input is stated with its reason and never silently replaced by zero; a zero recovery or payoff is allowed only as a labeled judgment with its evidence. A model citation is not an archived source, and agreement among stages does not establish that a citation supports its claim.
+Material claims rest on primary sources, and agents also search beyond them (forums, social media, trade press, news, reviews, sell-side commentary) for alternative theses and contrary evidence. These are leads to verify against a primary source, and what cannot be verified is a labeled judgment. Every source is cited by publisher, title, URL or filing, precise locator, retrieval time, publication date when known, and period. Numbers are labeled as sourced facts, derived amounts or judgments. Probabilities are judgments unless an empirical calibration is actually established. A missing input is stated with its reason and never silently replaced by zero; a zero recovery or payoff is allowed only as a labeled judgment with its evidence. A model citation is not an archived source, and agreement among stages does not establish that a citation supports its claim.
 
 ### Agent valuation method
 

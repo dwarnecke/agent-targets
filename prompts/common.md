@@ -8,7 +8,9 @@ Write every equation in LaTeX so it renders in common viewers: `$...$` inline, `
 
 ## Evidence
 
-- Read primary sources, not search snippets. Cite each source by publisher, title, URL or filing, a precise locator (page, section or table) and retrieval time, and say whether a figure is a sourced fact, a derived amount or a judgment.
+- Base every material claim on primary sources (filings, company documents, regulator and exchange records, government data), and read them rather than search snippets.
+- Also look outside primary sources: practitioner discussion on forums and social media, trade press, news, customer and employee reviews and sell-side commentary surface alternative theses, contrary evidence and facts the company does not publish. Treat them as leads. Verify what matters against a primary source, and label a claim you cannot verify as a judgment, never a sourced fact.
+- Cite each source by publisher, title, URL or filing, a precise locator (page, section or table) and retrieval time, and say whether a figure is a sourced fact, a derived amount or a judgment.
 - Never invent a value. If something cannot be established, say so, state what is missing and why it matters, and continue with the analysis that is still possible.
 - Where evidence contradicts an assumption, say so and show how you resolved it.
 - Disclose every limitation, unresolved question and disagreement plainly in your final message, so the report can carry it to the reader.

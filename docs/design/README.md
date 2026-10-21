@@ -8,7 +8,7 @@ Manual equity research requires repeated prompt handoffs and reconciliation of c
 
 A local Python runner first fetches the security, quote and rates from published sources, then coordinates six sequential research-agent stages: Research, Modeling, Refutation, Comparison, Review and Report. Refutation and Comparison correct the model in place, and Review checks those corrections and fixes small errors. The fetched facts form the initiation record, the first of seven pipeline steps and the only one run by code. All agent stages continue one Codex conversation, so each keeps the sources and calculations of the earlier stages and the runner sends only the common policy, ticker and initiation record once, at the start. Each stage's final message is saved, and the final stage's response is the saved report.
 
-The agents perform all business research, analysis and financial calculation using their own research and calculation tools. The runner has a source integration only for the initiation facts, which are not analysis; it has no DCF calculator or validator of analytical content. It builds each prompt, invokes the model, retries a call that returns nothing, and saves what comes back. See the [run lifecycle](execution.md#run-lifecycle).
+The agents perform all business research, analysis and financial calculation using their own research and calculation tools, and keep each outcome's forecast statements in a workbook of its own ([workbooks](workflow.md#workbooks)). The runner has a source integration only for the initiation facts, which are not analysis; it has no DCF calculator or validator of analytical content, and its only arithmetic is evaluating the formulas the agents wrote in their workbooks. It builds each prompt, invokes the model, retries a call that returns nothing, packs the workbooks and saves what comes back. See the [run lifecycle](execution.md#run-lifecycle).
 
 ### Scope
 
@@ -40,7 +40,7 @@ The agent reconciles the historical baseline, classifies competitive advantages 
 
 #### 3. Modeling: research the forecast inputs and build the DCF
 
-The agent researches the numerical inputs for each outcome and builds its forward cash-flow schedule, terminal value and per-share value, keeping research's outcomes and probabilities. See the [valuation method](valuation.md#agent-valuation-method).
+The agent researches the numerical inputs for each outcome and builds its forward statements, cash-flow schedule, terminal value and per-share value in that outcome's workbook, keeping research's outcomes and probabilities. See the [valuation method](valuation.md#agent-valuation-method) and the [statement conventions](valuation.md#statement-conventions).
 
 #### 4. Refutation: challenge the completed work and correct it
 
@@ -66,17 +66,17 @@ A saved report is not proof of correct valuation. Human review remains necessary
 
 ## Validation
 
-Test the runner offline with a fake backend, the initiation parsers and freshness checks with saved source responses, and the adapter with a short-lived real child process. `scripts/check-report.ps1` checks a finished report's section order, math delimiters and process wording. Judge research quality by having a reviewer read one real company report: its claims must follow from primary evidence, the weighted value must recompute from its outcome table, and the quote and outside targets must not have set the outcomes or weights. Discrepancies become prompt changes.
+Test the runner offline with a fake backend, the initiation parsers and freshness checks with saved source responses, the workbook packer with sample tab files, and the adapter with a short-lived real child process. `scripts/check-report.ps1` checks a finished report's section order, math delimiters and process wording, and `scripts/check-model.ps1` reports a finished run's workbook problems, failed check rows and per-outcome values. Judge research quality by having a reviewer read one real company report: its claims must follow from primary evidence, the weighted value must recompute from its outcome table, and the quote and outside targets must not have set the outcomes or weights. Discrepancies become prompt changes.
 
 ## Not Implemented
 
-- Historical backtesting, dynamic financing, additional currencies, multi-company runs, Monte Carlo, other model providers, workbook/DOCX/PDF export, web interfaces, distributed workers and scheduled monitoring.
+- Historical backtesting, dynamic financing, additional currencies, multi-company runs, Monte Carlo, other model providers, DOCX/PDF export, web interfaces, distributed workers and scheduled monitoring.
 
 ## Open Questions
 
 - Which research model gives acceptable reports at acceptable time and cost?
 - What timeout and attempt limits does the first company pilot justify?
-- Do the saved records in the report prompt keep the report's annual schedules complete and faithful?
+- Do the saved records and evaluated workbooks in the report prompt keep the report's annual schedules complete and faithful?
 - Does refutation in the author's own conversation find as many material problems as a separate conversation did in the ADBE pilot, and does correcting the model in the same stage make it less adversarial?
 - Do refutation and comparison finish their longer stages within the call timeout when they rebuild an outcome?
 - How often does the review stage find an error the earlier corrections introduced?

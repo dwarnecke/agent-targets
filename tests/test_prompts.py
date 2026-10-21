@@ -4,6 +4,8 @@ __email__ = "dylan.warnecke@gmail.com"
 import re
 from pathlib import Path
 
+from agent_targets.workbook import EVENT_TABS, GOING_CONCERN_TABS
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 POLICY_ROOTS = ("prompts", "docs/design")
 RETIRED_FUNDING_POLICY = re.compile(
@@ -138,3 +140,32 @@ def test_review_prompt_exists_for_the_final_stage() -> None:
     text = (PROJECT_ROOT / "prompts" / "review.md").read_text(encoding="utf-8")
     assert text.startswith("# Stage: Review")
     assert "small" in text.lower()
+
+
+def test_policy_defines_the_workbook_files_every_stage_relies_on() -> None:
+    """Fail when the shared policy stops describing the tab files, checks and problems file."""
+    policy = (PROJECT_ROOT / "prompts" / "common.md").read_text(encoding="utf-8")
+    assert "## Workbooks" in policy
+    assert "model/problems.md" in policy and "model/values.md" in policy
+    assert "Fair value per share" in policy
+    for name in GOING_CONCERN_TABS + EVENT_TABS:
+        assert f"`{name}`" in policy, name
+
+
+def test_workbook_tabs_are_defined_consistently() -> None:
+    """Fail when the tab names in the code differ from those in the design and the policy."""
+    design = (PROJECT_ROOT / "docs" / "design" / "workflow.md").read_text(encoding="utf-8")
+    for name in GOING_CONCERN_TABS + EVENT_TABS:
+        assert f"`{name}`" in design, name
+
+
+def test_stages_edit_workbooks_instead_of_restating_schedules() -> None:
+    """Fail when a correcting stage goes back to restating complete schedules in its response."""
+    for stage in ("refutation", "comparison", "review"):
+        text = (PROJECT_ROOT / "prompts" / f"{stage}.md").read_text(encoding="utf-8")
+        assert "workbook tabs you changed" in text, stage
+        assert "complete schedule" not in text, stage
+    modeling = (PROJECT_ROOT / "prompts" / "modeling.md").read_text(encoding="utf-8")
+    assert "model/company/Inputs.tsv" in modeling
+    for name in ("Revenue", "Income", "Balance", "CashFlow", "Value", "Tests"):
+        assert f"`{name}`" in modeling, name

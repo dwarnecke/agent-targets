@@ -1,6 +1,6 @@
 # Automated DCF Research CLI
 
-A local pipeline for agent-led company research and DCF valuation. `research WMT` (optionally `--model <model-id>`, default `gpt-5.6-sol`) fetches the security, quote and rates with code, then runs six agent stages through the Codex CLI and saves the company report as `report.md`, with the initiation record and every stage's response, under `runs/<run-id>/`. The report gives a probability-weighted fair value and each outcome's probability and value.
+A local pipeline for agent-led company research and DCF valuation. `research WMT` (optionally `--model <model-id>`, default `gpt-5.6-sol`) fetches the security, quote and rates with code, then runs six agent stages through the Codex CLI and saves the company report as `report.md`, with the initiation record, every stage's response and one Excel workbook per outcome (`model/`), under `runs/<run-id>/`. The report gives a probability-weighted fair value and each outcome's probability and value.
 
 The pipeline is implemented and each stage's response is plain Markdown. The stage prompts are pilot versions, and a reviewed full company run has not been completed. See the [command contract](docs/design/workflow.md#commands) for exit codes.
 

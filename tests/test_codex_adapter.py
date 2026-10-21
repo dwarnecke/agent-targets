@@ -23,6 +23,12 @@ WRITES_BLANK_MESSAGE = (
     "print('{\"type\":\"thread.started\",\"thread_id\":\"abc\"}')\n"
     "open(sys.argv[1], 'w').write('  \\n')\n"
 )
+WRITES_WORKING_DIRECTORY = (
+    "import os, sys\n"
+    "sys.stdin.buffer.read()\n"
+    "print('{\"type\":\"thread.started\",\"thread_id\":\"abc\"}')\n"
+    "open(sys.argv[1], 'w').write(os.getcwd())\n"
+)
 SLEEPS = "import time\ntime.sleep(30)\n"
 
 
@@ -43,19 +49,23 @@ def _invoke(
     """
     context_dir = tmp_path / "context"
     context_dir.mkdir()
+    workspace_dir = tmp_path / "workspace"
+    workspace_dir.mkdir()
     adapter = CodexAdapter(tmp_path / "unused", "test-model", "test-effort")
-    adapter.build_args = lambda context_dir, output_path, session_id: [
+    adapter.build_args = lambda workspace_dir, output_path, session_id: [
         sys.executable,
         "-c",
         script,
         str(output_path),
     ]
-    return adapter.invoke(context_dir, "prompt", timeout_seconds, session_id)
+    return adapter.invoke(
+        context_dir, workspace_dir, "prompt", timeout_seconds, session_id
+    )
 
 
 def test_build_args_keeps_the_safety_flags(tmp_path: Path) -> None:
     """
-    The argument list never relaxes approvals or the sandbox.
+    The argument list never relaxes approvals and confines writes to the workspace.
 
     :param tmp_path: Directory used for the executable and output paths
     """
@@ -66,7 +76,8 @@ def test_build_args_keeps_the_safety_flags(tmp_path: Path) -> None:
 
     overrides = [args[i + 1] for i, arg in enumerate(args) if arg == "-c"]
     assert args[args.index("--ask-for-approval") + 1] == "never"
-    assert args[args.index("--sandbox") + 1] == "read-only"
+    assert args[args.index("--sandbox") + 1] == "workspace-write"
+    assert args[args.index("--cd") + 1] == str(tmp_path / "context")
     assert args[args.index("--model") + 1] == "test-model"
     assert args[args.index("--output-last-message") + 1] == str(output_path)
     assert overrides == [
@@ -75,6 +86,7 @@ def test_build_args_keeps_the_safety_flags(tmp_path: Path) -> None:
         'model_reasoning_effort="test-effort"',
     ]
     assert "--dangerously-bypass-approvals-and-sandbox" not in args
+    assert "danger-full-access" not in args
     assert "--output-schema" not in args
     assert "resume" not in args
     assert "--search" in args
@@ -85,7 +97,7 @@ def test_build_args_resumes_a_conversation_with_the_same_safety(
     tmp_path: Path,
 ) -> None:
     """
-    A resumed call names its conversation and keeps the read-only sandbox.
+    A resumed call names its conversation and keeps the workspace-write sandbox.
 
     :param tmp_path: Directory used for the executable and output paths
     """
@@ -98,7 +110,8 @@ def test_build_args_resumes_a_conversation_with_the_same_safety(
     assert args[args.index("exec") + 1] == "resume"
     assert args[-2:] == ["session-1", "-"]
     assert args[args.index("--ask-for-approval") + 1] == "never"
-    assert 'sandbox_mode="read-only"' in overrides
+    assert 'sandbox_mode="workspace-write"' in overrides
+    assert "--cd" not in args and "--sandbox" not in args
     assert "project_doc_max_bytes=0" in overrides
     assert 'windows.sandbox="elevated"' in overrides
     assert args[args.index("--model") + 1] == "test-model"
@@ -120,6 +133,22 @@ def test_invoke_returns_the_final_message_and_saves_diagnostics(
     assert response == CodexResponse("# Final message", "abc")
     assert (tmp_path / "context" / "stdout.jsonl").is_file()
     assert (tmp_path / "context" / "stderr.log").is_file()
+
+
+def test_invoke_runs_the_child_in_the_workspace_and_logs_in_the_context(
+    tmp_path: Path,
+) -> None:
+    """
+    The child's working directory is the workspace; diagnostics go to the context.
+
+    :param tmp_path: Directory used for the call's working files
+    """
+    response = _invoke(tmp_path, WRITES_WORKING_DIRECTORY, timeout_seconds=30)
+
+    assert response is not None
+    assert Path(response.text).resolve() == (tmp_path / "workspace").resolve()
+    assert (tmp_path / "context" / "stdout.jsonl").is_file()
+    assert not (tmp_path / "workspace" / "stdout.jsonl").exists()
 
 
 def test_invoke_keeps_the_conversation_it_resumes(tmp_path: Path) -> None:

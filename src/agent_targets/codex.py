@@ -29,12 +29,14 @@ class CodexAdapter:
         self._effort = effort
 
     def build_args(
-        self, context_dir: Path, output_path: Path, session_id: str | None = None
+        self, workspace_dir: Path, output_path: Path, session_id: str | None = None
     ) -> list[str]:
         """
         Build the documented non-interactive invocation argument list.
 
-        :param context_dir: Read-only working directory for the call
+        The model's shell can write only inside the workspace directory.
+
+        :param workspace_dir: Working directory for the call, the run directory
         :param output_path: File the CLI writes its final message to
         :param session_id: Conversation to continue, or None to start a new one
         :returns: Complete argument list, passed without a shell
@@ -66,21 +68,21 @@ class CodexAdapter:
                 "exec",
                 *shared,
                 "--sandbox",
-                "read-only",
+                "workspace-write",
                 "--cd",
-                str(context_dir),
+                str(workspace_dir),
                 "-",
             ]
 
         # `exec resume` has no --sandbox or --cd; the process working directory
-        # is the call's context directory
+        # is the call's workspace directory
         return [
             *prefix,
             "exec",
             "resume",
             *shared,
             "-c",
-            'sandbox_mode="read-only"',
+            'sandbox_mode="workspace-write"',
             session_id,
             "-",
         ]
@@ -88,6 +90,7 @@ class CodexAdapter:
     def invoke(
         self,
         context_dir: Path,
+        workspace_dir: Path,
         prompt_text: str,
         timeout_seconds: float,
         session_id: str | None = None,
@@ -99,7 +102,9 @@ class CodexAdapter:
         `stderr.log` in `context_dir`. A timeout kills the direct child
         process; containing its descendants is deferred.
 
-        :param context_dir: Read-only working directory for the call
+        :param context_dir: Directory for the call's events, diagnostics and
+            final message
+        :param workspace_dir: Working directory the model's shell may write to
         :param prompt_text: Combined instructions sent on stdin
         :param timeout_seconds: Maximum time to wait before killing the call
         :param session_id: Conversation to continue, or None to start a new one
@@ -107,7 +112,7 @@ class CodexAdapter:
             an empty message or a new conversation whose ID was not reported
         """
         output_path = context_dir / "attempt-candidate.md"
-        args = self.build_args(context_dir, output_path, session_id)
+        args = self.build_args(workspace_dir, output_path, session_id)
 
         # The child writes straight to files, so a full pipe can never stall it
         with (
@@ -117,7 +122,7 @@ class CodexAdapter:
             try:
                 subprocess.run(
                     args,
-                    cwd=context_dir,
+                    cwd=workspace_dir,
                     input=prompt_text.encode("utf-8"),
                     stdout=stdout,
                     stderr=stderr,
